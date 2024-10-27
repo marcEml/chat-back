@@ -1,0 +1,109 @@
+// schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String        @id @unique @default(uuid())
+  lastname        String
+  firstname       String
+  email           String        @unique
+  phone           String
+  birthday        DateTime
+  password        String
+  gender          Gender
+  role            UserRole
+  teachingClasses Class[]       @relation("TeacherClasses")
+  classAccesses   ClassAccess[]
+  messages        Message[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model Class {
+  id          Int           @id @default(autoincrement())
+  name        String
+  year        String
+  teacherId   String
+  teacher     User          @relation("TeacherClasses", fields: [teacherId], references: [id])
+  students    ClassAccess[]
+  evaluations Evaluation[]
+  messages    Message[]
+  documents   Document[] // Add this line to establish the relationship
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@map("classes")
+}
+
+model Message {
+  id        Int      @id @default(autoincrement())
+  content   String
+  senderId  String
+  image     String   @default("")
+  classId   Int?
+  sender    User     @relation(fields: [senderId], references: [id])
+  class     Class?   @relation(fields: [classId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@map("messages")
+}
+
+model ClassAccess {
+  id        Int          @id @default(autoincrement())
+  classId   Int
+  userId    String
+  status    AccessStatus @default(PENDING)
+  class     Class        @relation(fields: [classId], references: [id])
+  user      User         @relation(fields: [userId], references: [id])
+  createdAt DateTime     @default(now())
+
+  @@map("class_accesses")
+}
+
+model Document {
+  id        Int      @id @default(autoincrement())
+  title     String
+  content   String // Assuming content is stored as text; adjust this if using file storage
+  classId   Int
+  class     Class    @relation(fields: [classId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("documents")
+}
+
+model Evaluation {
+  id        Int      @id @default(autoincrement())
+  title     String
+  content   String
+  classId   Int
+  class     Class    @relation(fields: [classId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("evaluations")
+}
+
+enum UserRole {
+  TEACHER
+  STUDENT
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum AccessStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
