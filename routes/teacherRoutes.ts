@@ -16,5 +16,7 @@ router.get("/teacher/get/class", TeacherController.getTeacherClasses); // approv
 
 router.post("/teacher/create/document", TeacherController.registerDocument); // approve class access
 router.post("/teacher/create/evaluation", TeacherController.registerEvaluation); // approve class access
+router.post("/teacher/create/notification", TeacherController.registerNotification); // approve class access
+router.get("/teacher/:teacherId/notifications", TeacherController.getTeacherNotifications); // approve class access
 
 export default router;

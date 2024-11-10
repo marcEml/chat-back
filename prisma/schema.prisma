@@ -10,34 +10,36 @@ datasource db {
 }
 
 model User {
-  id              String        @id @unique @default(uuid())
+  id              String         @id @unique @default(uuid())
   lastname        String
   firstname       String
-  email           String        @unique
+  email           String         @unique
   phone           String
   birthday        DateTime
   password        String
   gender          Gender
   role            UserRole
-  teachingClasses Class[]       @relation("TeacherClasses")
+  teachingClasses Class[]        @relation("TeacherClasses")
   classAccesses   ClassAccess[]
   messages        Message[]
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  notifications   Notification[] @relation("TeacherNotifications")
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
 }
 
 model Class {
-  id          Int           @id @default(autoincrement())
-  name        String
-  year        String
-  teacherId   String
-  teacher     User          @relation("TeacherClasses", fields: [teacherId], references: [id])
-  students    ClassAccess[]
-  evaluations Evaluation[]
-  messages    Message[]
-  documents   Document[] // Add this line to establish the relationship
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id            Int            @id @default(autoincrement())
+  name          String
+  year          String
+  teacherId     String
+  teacher       User           @relation("TeacherClasses", fields: [teacherId], references: [id])
+  students      ClassAccess[]
+  evaluations   Evaluation[]
+  messages      Message[]
+  documents     Document[]
+  notifications Notification[] @relation("ClassNotifications")
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 
   @@map("classes")
 }
@@ -70,7 +72,7 @@ model ClassAccess {
 model Document {
   id        Int      @id @default(autoincrement())
   title     String
-  content   String // Assuming content is stored as text; adjust this if using file storage
+  content   String
   classId   Int
   class     Class    @relation(fields: [classId], references: [id])
   createdAt DateTime @default(now())
@@ -89,6 +91,19 @@ model Evaluation {
   updatedAt DateTime @updatedAt
 
   @@map("evaluations")
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  content   String
+  senderId  String
+  classId   Int?
+  sender    User     @relation("TeacherNotifications", fields: [senderId], references: [id])
+  class     Class?   @relation("ClassNotifications", fields: [classId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("notifications")
 }
 
 enum UserRole {

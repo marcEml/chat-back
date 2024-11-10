@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 const User = require("../../lib/prisma").user;
 const Class = require("../../lib/prisma").class;
 const ClassAccess = require("../../lib/prisma").classAccess;
+const Notification = require("../../lib/prisma").notification;
 
 export const StudentController = {
   createClassAccess: async (req: any, res: any) => {
@@ -307,6 +308,76 @@ export const StudentController = {
           message: "An error occurred while fetching pending access requests.",
           error: error.message,
         },
+      });
+    }
+  },
+
+  getStudentNotifications: async (req: any, res: any) => {
+    try {
+      const { studentId } = req.params; // Assuming studentId is passed as a route parameter
+
+      // Validate that studentId is provided
+      if (!studentId) {
+        return res.status(400).json({
+          status: false,
+          data: {
+            message: "Student ID is required.",
+          },
+        });
+      }
+
+      // Check if the user with this studentId exists and is a student
+      const student = await User.findUnique({
+        where: { id: studentId },
+      });
+
+      if (!student || student.role !== "STUDENT") {
+        return res.status(404).json({
+          status: false,
+          data: {
+            message: "Student not found or user is not a student.",
+          },
+        });
+      }
+
+      // Fetch notifications for the student
+      const notifications = await Notification.findMany({
+        where: {
+          class: {
+            students: {
+              some: {
+                userId: studentId,
+              },
+            },
+          },
+        },
+        include: {
+          sender: {
+            select: {
+              id: true,
+              firstname: true,
+              lastname: true,
+              email: true,
+              phone: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+      });
+
+      return res.status(200).json({
+        status: true,
+        data: {
+          notifications,
+        },
+      });
+    } catch (error: any) {
+      console.error(error);
+      return res.status(500).json({
+        status: false,
+        error: error.message,
       });
     }
   },

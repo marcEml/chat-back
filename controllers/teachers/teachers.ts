@@ -5,6 +5,7 @@ const Class = require("../../lib/prisma").class;
 const Document = require("../../lib/prisma").document;
 const Evaluation = require("../../lib/prisma").evaluation;
 const ClassAccess = require("../../lib/prisma").classAccess;
+const Notification = require("../../lib/prisma").notification;
 
 export const TeacherController = {
   createClass: async (req: any, res: any) => {
@@ -544,6 +545,130 @@ export const TeacherController = {
         status: true,
         data: {
           evaluation: newEvaluation,
+        },
+      });
+    } catch (error: any) {
+      console.error(error);
+      return res.status(500).json({
+        status: false,
+        error: error.message,
+      });
+    }
+  },
+
+  registerNotification: async (req: any, res: any) => {
+    try {
+      console.log("Registering notification...");
+      const { content, classId, senderId } = req.body;
+
+      // Validate mandatory fields
+      if (!content || !classId || !senderId) {
+        return res.status(400).json({
+          status: false,
+          data: {
+            message: "All mandatory fields (content, classId, senderId) must be completed.",
+          },
+        });
+      }
+
+      // Verify that the class exists
+      const existingClass = await Class.findUnique({
+        where: { id: classId },
+      });
+
+      if (!existingClass) {
+        return res.status(404).json({
+          status: false,
+          data: {
+            message: "The specified class does not exist.",
+          },
+        });
+      }
+
+      // Verify that the sender exists and is a teacher
+      const sender = await User.findUnique({
+        where: { id: senderId },
+      });
+
+      if (!sender || sender.role !== "TEACHER") {
+        return res.status(403).json({
+          status: false,
+          data: {
+            message: "The sender must be a valid teacher.",
+          },
+        });
+      }
+
+      // Create the notification
+      const newNotification = await Notification.create({
+        data: {
+          content,
+          classId,
+          senderId,
+        },
+      });
+
+      console.log("Notification registered successfully.");
+      return res.status(201).json({
+        status: true,
+        data: {
+          notification: newNotification,
+        },
+      });
+    } catch (error: any) {
+      console.error(error);
+      return res.status(500).json({
+        status: false,
+        error: error.message,
+      });
+    }
+  },
+
+  getTeacherNotifications: async (req: any, res: any) => {
+    try {
+      const { teacherId } = req.params; // Assuming teacherId is passed as a route parameter
+
+      // Validate that teacherId is provided
+      if (!teacherId) {
+        return res.status(400).json({
+          status: false,
+          data: {
+            message: "Teacher ID is required.",
+          },
+        });
+      }
+
+      // Check if the user with this teacherId exists and is a teacher
+      const teacher = await User.findUnique({
+        where: { id: teacherId },
+      });
+
+      if (!teacher || teacher.role !== "TEACHER") {
+        return res.status(404).json({
+          status: false,
+          data: {
+            message: "Teacher not found or user is not a teacher.",
+          },
+        });
+      }
+
+      // Fetch notifications sent by the teacher
+      const notifications = await Notification.findMany({
+        where: {
+          senderId: teacherId,
+        },
+        include: {
+          class: true,
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+      });
+
+      return res.status(200).json({
+        status: true,
+        data: {
+          notifications,
         },
       });
     } catch (error: any) {

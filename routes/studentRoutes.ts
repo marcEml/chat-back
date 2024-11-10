@@ -11,4 +11,6 @@ router.delete("/student/delete/class-access", StudentController.deleteClassAcces
 router.get("/student/get/class", StudentController.getStudentClasses); // create class access
 router.get("/student/get/request", StudentController.getPendingAccessRequests); // get class access request
 
+router.get("/student/:studentId/notifications", StudentController.getStudentNotifications); // get class access request
+
 export default router;
